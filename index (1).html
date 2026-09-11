@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IoT Crowd Sensor Demo</title>
+<style>
+  :root {
+    --navy: #1F3864;
+    --blue: #2E5395;
+    --bg: #F4F6FA;
+    --card: #FFFFFF;
+    --border: #DCE2ED;
+    --text: #1F2430;
+    --muted: #6B7280;
+    --active: #1D9E75;
+    --idle: #9CA3AF;
+    --high: #D85A30;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 24px 20px 60px; }
+  .wide { max-width: 900px; }
+  h1 { font-size: 22px; color: var(--navy); margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: var(--navy);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .btn:active { background: var(--blue); }
+  .btn.secondary {
+    background: white;
+    color: var(--navy);
+    border: 1px solid var(--navy);
+  }
+  .note {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    background: #F0F3F9;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  .warn-banner {
+    font-size: 13px;
+    color: #A32D2D;
+    background: #FCEBEB;
+    border: 1px solid #F0999599;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .gauge-wrap { text-align: center; padding: 12px 0; }
+  .gauge-num { font-size: 48px; font-weight: 700; color: var(--navy); }
+  .gauge-label { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .bar-track {
+    width: 100%; height: 14px; background: #E5E9F0; border-radius: 7px;
+    overflow: hidden; margin-top: 14px;
+  }
+  .bar-fill { height: 100%; background: var(--blue); transition: width 0.3s ease; }
+  .status-pill {
+    display: inline-block; font-size: 12px; padding: 4px 10px; border-radius: 20px;
+    font-weight: 600; margin-bottom: 4px;
+  }
+  .pill-ok { background: #E1F5EE; color: #0F6E56; }
+  .pill-warn { background: #FAEEDA; color: #854F0B; }
+  .pill-err { background: #FCEBEB; color: #A32D2D; }
+  input[type=range] { width: 100%; margin: 16px 0 4px; }
+  .stat-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .stat-card {
+    flex: 1; min-width: 130px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; text-align: center;
+  }
+  .stat-val { font-size: 28px; font-weight: 700; color: var(--navy); }
+  .stat-lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .phone-list { display: flex; flex-direction: column; gap: 8px; }
+  .phone-row {
+    display: flex; flex-direction: column; gap: 6px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px;
+  }
+  .phone-row-main { display: flex; align-items: center; gap: 12px; }
+  .phone-meta { font-size: 11px; color: var(--muted); padding-left: 2px; }
+  .phone-name { width: 90px; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+  .phone-bar-track { flex: 1; height: 10px; background: #E5E9F0; border-radius: 5px; overflow: hidden; }
+  .phone-bar-fill { height: 100%; transition: width 0.4s ease; }
+  .phone-val { width: 36px; text-align: right; font-size: 13px; color: var(--muted); flex-shrink: 0; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; flex-shrink: 0; }
+  .dash-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+  .btn-small {
+    display: inline-block; width: auto; background: white; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px;
+    font-size: 12px; font-weight: 600; cursor: pointer; margin: 0;
+  }
+  .btn-small:active { background: #F0F3F9; }
+  .tag-idle { background: #F1EFE8; color: #5F5E5A; }
+  .tag-active { background: #EAF3DE; color: #3B6D11; }
+  .tag-high { background: #FAECE7; color: #993C1D; }
+  .empty { text-align: center; color: var(--muted); padding: 30px 0; font-size: 14px; }
+  svg.spark { width: 100%; height: 70px; display: block; }
+  .hidden { display: none; }
+  a.back { color: var(--muted); font-size: 13px; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- ROLE PICKER -->
+<div id="view-picker" class="wrap">
+  <h1>IoT crowd sensor demo</h1>
+  <div class="sub">BAANEL4 — Pair 2: IoT Analytics</div>
+  <div id="config-warning" class="warn-banner hidden">
+    This page hasn't been connected to a database yet — open the HTML file, find the section marked "PASTE YOUR FIREBASE CONFIG HERE", and paste in your project's config values.
+  </div>
+  <div class="card">
+    <p style="margin-top:0;font-size:14px;color:var(--text);">Choose how you're joining this activity.</p>
+    <button class="btn" onclick="showView('sensor')">I'm a sensor (use my phone)</button>
+    <button class="btn secondary" onclick="showView('dashboard')">Show the live dashboard</button>
+  </div>
+</div>
+
+<!-- SENSOR VIEW -->
+<div id="view-sensor" class="wrap hidden">
+  <a class="back" href="#" onclick="showView('picker');return false;">&larr; Back</a>
+  <h1>You're a sensor</h1>
+  <div class="sub">Move or tilt your phone — it feeds the live dashboard.</div>
+
+  <div class="note">
+    This page reads your phone's motion and orientation sensors to send an activity number (0-100) and a rough step count to a shared classroom dashboard in real time. No other data is collected, and everything disappears automatically once you close this tab.
+  </div>
+
+  <div class="card" id="sensor-setup">
+    <button class="btn" id="enable-btn" onclick="enableSensor()">Enable motion sensor</button>
+    <p style="font-size:12px;color:var(--muted);text-align:center;margin:0;">If your phone can't share motion data, you'll get a manual slider instead.</p>
+  </div>
+
+  <div class="card hidden" id="sensor-live">
+    <div class="status-pill pill-ok" id="mode-pill">Connected</div>
+    <div class="gauge-wrap">
+      <div class="gauge-num" id="gauge-num">0</div>
+      <div class="gauge-label">Your activity level</div>
+      <div class="bar-track"><div class="bar-fill" id="gauge-bar" style="width:0%"></div></div>
+    </div>
+    <div style="margin-top:4px;padding-top:14px;border-top:1px solid var(--border);text-align:center;">
+      <div style="font-size:28px;font-weight:700;color:var(--navy);" id="step-count">0</div>
+      <div class="gauge-label" id="step-label">Steps this session</div>
+    </div>
+    <div id="manual-controls" class="hidden">
+      <input type="range" id="manual-slider" min="0" max="100" value="0" oninput="onManualInput(this.value)">
+      <p style="font-size:12px;color:var(--muted);text-align:center;">Drag to send an activity level manually</p>
+    </div>
+    <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:10px;">You're sending as <b id="sensor-name">-</b></p>
+  </div>
+</div>
+
+<!-- DASHBOARD VIEW -->
+<div id="view-dashboard" class="wrap wide hidden">
+  <a class="back" href="#" onclick="showView('picker');return false;">&larr; Back</a>
+  <div class="dash-header-row">
+    <div>
+      <h1 style="margin-bottom:6px;">Live sensor dashboard</h1>
+      <span class="status-pill pill-ok" id="room-status">Room: calm</span>
+    </div>
+    <button class="btn-small" onclick="resetDashboard()">Reset (clear all phones)</button>
+  </div>
+  <div class="sub">Aggregated in real time from every phone currently connected</div>
+  <div id="sustained-flag" class="warn-banner hidden">Auto-flag: sustained high activity detected for 5+ seconds.</div>
+
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-val" id="stat-count">0</div><div class="stat-lbl">Connected phones</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-avg">0</div><div class="stat-lbl">Average activity</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-active">0%</div><div class="stat-lbl">Currently active</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-steps">0</div><div class="stat-lbl">Total steps</div></div>
+  </div>
+
+  <div class="card">
+    <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:var(--navy);">Aggregate activity — recent history</p>
+    <svg class="spark" id="spark" viewBox="0 0 600 70"></svg>
+  </div>
+
+  <div class="card">
+    <p style="margin:0 0 10px;font-size:13px;font-weight:600;color:var(--navy);">Per-phone readings</p>
+    <div class="phone-list" id="phone-list">
+      <div class="empty">Waiting for phones to connect...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK (compat build — works with plain <script> tags, no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+  // ================= PASTE YOUR FIREBASE CONFIG HERE =================
+  // Replace the object below with the one Firebase showed you after
+  // registering a web app (Project settings > Your apps).
+  const firebaseConfig = {
+    apiKey: "AIzaSyB474MJ9V8rMJqYbsDLKGpdKasCY2T6Q6Q",
+    authDomain: "iot-sensor-1f346.firebaseapp.com",
+    databaseURL: "https://iot-sensor-1f346-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "iot-sensor-1f346",
+    storageBucket: "iot-sensor-1f346.firebasestorage.app",
+    messagingSenderId: "407257242338",
+    appId: "1:407257242338:web:fe3ed3b159aacd5d925cbb"
+  };
+  // ======================================================================
+
+  const CONFIG_IS_SET = firebaseConfig.apiKey !== "PASTE_ME" && firebaseConfig.databaseURL !== "PASTE_ME";
+  let db = null;
+  if (CONFIG_IS_SET) {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+  } else {
+    document.getElementById('config-warning').classList.remove('hidden');
+  }
+
+  // ---------- shared constants ----------
+  const NAMES = ["Amber","Teal","Coral","Blue","Green","Violet","Rose","Slate","Gold","Mint","Sky","Clay"];
+  const ACTIVE_THRESHOLD = 45;
+  const HIGH_THRESHOLD = 80;
+  const WRITE_INTERVAL_MS = 2000;
+
+  function showView(name) {
+    document.getElementById('view-picker').classList.add('hidden');
+    document.getElementById('view-sensor').classList.add('hidden');
+    document.getElementById('view-dashboard').classList.add('hidden');
+    if (name === 'picker') document.getElementById('view-picker').classList.remove('hidden');
+    if (name === 'sensor') { document.getElementById('view-sensor').classList.remove('hidden'); initSensorId(); }
+    if (name === 'dashboard') { document.getElementById('view-dashboard').classList.remove('hidden'); startDashboard(); }
+  }
+
+  // ---------- sensor page ----------
+  let sensorId = null;
+  let sensorName = null;
+  let currentActivity = 0;
+  let writeTimer = null;
+  let sensorRef = null;
+
+  function initSensorId() {
+    if (sensorId) return;
+    sensorId = 'p-' + Math.random().toString(36).slice(2, 9);
+    const idx = Math.abs(hashCode(sensorId)) % NAMES.length;
+    sensorName = NAMES[idx] + '-' + sensorId.slice(-2);
+    document.getElementById('sensor-name').textContent = sensorName;
+  }
+
+  function hashCode(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h << 5) - h + str.charCodeAt(i);
+    return h;
+  }
+
+  async function enableSensor() {
+    if (!db) { alert('This page is not connected to a database yet. See the notice on the home screen.'); return; }
+    const needsOrientationPermission = typeof DeviceOrientationEvent !== 'undefined' &&
+                                        typeof DeviceOrientationEvent.requestPermission === 'function';
+    const needsMotionPermission = typeof DeviceMotionEvent !== 'undefined' &&
+                                   typeof DeviceMotionEvent.requestPermission === 'function';
+
+    let orientationOk = true;
+    let stepsOk = true;
+
+    if (needsOrientationPermission) {
+      try {
+        orientationOk = (await DeviceOrientationEvent.requestPermission()) === 'granted';
+      } catch (e) { orientationOk = false; }
+    }
+    if (needsMotionPermission) {
+      try {
+        stepsOk = (await DeviceMotionEvent.requestPermission()) === 'granted';
+      } catch (e) { stepsOk = false; }
+    }
+
+    if (!orientationOk) { startManualMode(); return; }
+    startMotionMode(stepsOk);
+    if (!needsOrientationPermission) {
+      // Android/other: no permission gate, but confirm a reading actually arrives
+      setTimeout(() => { if (!motionReadingSeen) startManualMode(); }, 3000);
+    }
+  }
+
+  let motionReadingSeen = false;
+  let lastBeta = null, lastGamma = null, energy = 0;
+
+  function startMotionMode(stepsOk) {
+    document.getElementById('sensor-setup').classList.add('hidden');
+    document.getElementById('sensor-live').classList.remove('hidden');
+    document.getElementById('mode-pill').textContent = 'Connected \u2014 motion sensor';
+    window.addEventListener('deviceorientation', onOrientation);
+    if (stepsOk && 'ondevicemotion' in window) {
+      window.addEventListener('devicemotion', onDeviceMotion);
+    } else {
+      document.getElementById('step-label').textContent = 'Steps: unavailable on this device';
+    }
+    setInterval(decayEnergy, 300);
+    beginWriting('sensor');
+  }
+
+  // ---------- step counting (separate from tilt-based activity) ----------
+  // Total acceleration magnitude alone can't tell a footstep from a swing,
+  // and even a gravity-direction check gets fooled once a hand is actively
+  // rotating the phone while swinging it — the swing itself throws off the
+  // "which way is down" estimate. The signal that's actually different
+  // between the two: a phone carried naturally while walking barely
+  // rotates, while a hand deliberately swinging it usually spins it
+  // noticeably. So a candidate step is rejected if the phone's rotation
+  // rate is high at that moment, on top of the gravity and rhythm checks
+  // from before.
+  let stepCount = 0;
+  let gx = 0, gy = 0, gz = 0, gravityInit = false;
+  let lastVerticalDeviation = 0;
+  let lastPeakTime = 0;
+  let stepIntervals = [];
+  const STEP_THRESHOLD = 3.5;        // vertical deviation from gravity baseline, m/s^2 — rough calibration, may need tuning
+  const STEP_MIN_INTERVAL_MS = 250;  // fastest plausible walking cadence (~240 steps/min)
+  const STEP_MAX_INTERVAL_MS = 900;  // slowest plausible walking cadence
+  const ROTATION_THRESHOLD = 200;    // deg/s — rough calibration; above this, treat as a deliberate swing, not a step
+
+  function onDeviceMotion(e) {
+    const acc = e.accelerationIncludingGravity || e.acceleration;
+    if (!acc || acc.x === null || acc.x === undefined) return;
+
+    if (!gravityInit) {
+      gx = acc.x; gy = acc.y; gz = acc.z;
+      gravityInit = true;
+      return;
+    }
+    const alpha = 0.9;
+    gx = alpha * gx + (1 - alpha) * acc.x;
+    gy = alpha * gy + (1 - alpha) * acc.y;
+    gz = alpha * gz + (1 - alpha) * acc.z;
+    const gravMag = Math.sqrt(gx * gx + gy * gy + gz * gz) || 1;
+
+    // how far this reading swings along the gravity axis specifically
+    const alongGravity = (acc.x * gx + acc.y * gy + acc.z * gz) / gravMag;
+    const verticalDeviation = Math.abs(alongGravity - gravMag);
+
+    const now = Date.now();
+    const crossedUp = verticalDeviation > STEP_THRESHOLD && lastVerticalDeviation <= STEP_THRESHOLD;
+    lastVerticalDeviation = verticalDeviation;
+    if (!crossedUp) return;
+
+    // reject candidates where the phone is clearly being rotated by hand —
+    // if this device doesn't report rotation data, this check is skipped
+    // rather than blocking every step on devices that can't provide it
+    const rot = e.rotationRate;
+    if (rot && rot.alpha !== null && rot.beta !== null && rot.gamma !== null) {
+      const rotMag = Math.sqrt((rot.alpha || 0) ** 2 + (rot.beta || 0) ** 2 + (rot.gamma || 0) ** 2);
+      if (rotMag > ROTATION_THRESHOLD) return;
+    }
+
+    const interval = lastPeakTime ? now - lastPeakTime : 0;
+    lastPeakTime = now;
+
+    if (interval < STEP_MIN_INTERVAL_MS || interval > STEP_MAX_INTERVAL_MS) {
+      stepIntervals = []; // too fast or too slow to be a walking step — reset the rhythm
+      return;
+    }
+    const prevInterval = stepIntervals[stepIntervals.length - 1];
+    if (prevInterval && (interval < prevInterval * 0.55 || interval > prevInterval * 1.8)) {
+      stepIntervals = [interval]; // rhythm too irregular — start tracking fresh
+      return;
+    }
+    stepIntervals.push(interval);
+    if (stepIntervals.length > 6) stepIntervals.shift();
+
+    // only confirm a step once a steady rhythm is actually established
+    if (stepIntervals.length >= 2) {
+      stepCount++;
+      document.getElementById('step-count').textContent = stepCount;
+    }
+  }
+
+  function onOrientation(e) {
+    motionReadingSeen = true;
+    if (e.beta === null || e.gamma === null) return;
+    if (lastBeta !== null) {
+      const delta = Math.abs(e.beta - lastBeta) + Math.abs(e.gamma - lastGamma);
+      energy = Math.min(100, energy * 0.8 + delta * 1.6);
+    }
+    lastBeta = e.beta; lastGamma = e.gamma;
+    currentActivity = Math.round(energy);
+    updateGauge(currentActivity);
+  }
+
+  function decayEnergy() {
+    energy = Math.max(0, energy * 0.9);
+    currentActivity = Math.round(energy);
+    updateGauge(currentActivity);
+  }
+
+  function startManualMode() {
+    document.getElementById('sensor-setup').classList.add('hidden');
+    document.getElementById('sensor-live').classList.remove('hidden');
+    document.getElementById('mode-pill').textContent = 'Connected \u2014 manual mode';
+    document.getElementById('mode-pill').className = 'status-pill pill-warn';
+    document.getElementById('manual-controls').classList.remove('hidden');
+    document.getElementById('step-label').textContent = 'Steps: unavailable in manual mode';
+    beginWriting('manual');
+  }
+
+  function onManualInput(val) {
+    currentActivity = parseInt(val, 10);
+    updateGauge(currentActivity);
+  }
+
+  function updateGauge(val) {
+    document.getElementById('gauge-num').textContent = val;
+    document.getElementById('gauge-bar').style.width = val + '%';
+  }
+
+  function beginWriting(mode) {
+    sensorRef = db.ref('sensors/' + sensorId);
+    // If this phone's connection drops (tab closed, network lost), Firebase
+    // removes its entry automatically — no reliance on a page-close event firing in time.
+    sensorRef.onDisconnect().remove();
+    writeReading(mode);
+    if (writeTimer) clearInterval(writeTimer);
+    writeTimer = setInterval(() => writeReading(mode), WRITE_INTERVAL_MS);
+  }
+
+  function writeReading(mode) {
+    if (!sensorRef) return;
+    sensorRef.set({
+      activity: currentActivity,
+      steps: stepCount,
+      mode: mode,
+      name: sensorName,
+      ts: firebase.database.ServerValue.TIMESTAMP
+    }).catch(() => { /* ignore a single failed write, next interval retries */ });
+  }
+
+  // ---------- dashboard page ----------
+  let dashboardStarted = false;
+  let history = [];
+  let peakMap = {};       // sensor key -> highest activity seen
+  let firstSeenMap = {};  // sensor key -> when we first saw it connected
+  let sustainedHighStart = null;
+
+  function startDashboard() {
+    if (!db) return;
+    if (dashboardStarted) return;
+    dashboardStarted = true;
+    // Live push subscription — updates the moment any phone's reading changes,
+    // no polling loop needed.
+    db.ref('sensors').on('value', (snapshot) => {
+      const val = snapshot.val() || {};
+      const now = Date.now();
+      const readings = Object.keys(val).map(key => Object.assign({ key: key }, val[key]));
+      readings.forEach(r => {
+        const activity = r.activity || 0;
+        if (!(r.key in peakMap) || activity > peakMap[r.key]) peakMap[r.key] = activity;
+        if (!(r.key in firstSeenMap)) firstSeenMap[r.key] = now;
+      });
+      // stop tracking phones that are no longer present
+      Object.keys(peakMap).forEach(k => { if (!val[k]) { delete peakMap[k]; delete firstSeenMap[k]; } });
+      renderDashboard(readings);
+    });
+  }
+
+  function resetDashboard() {
+    if (!db) return;
+    if (!confirm('Clear all connected phones? This removes every live reading.')) return;
+    db.ref('sensors').remove();
+  }
+
+  function renderDashboard(readings) {
+    const now = Date.now();
+    const count = readings.length;
+    const avg = count ? Math.round(readings.reduce((s, r) => s + (r.activity || 0), 0) / count) : 0;
+    const activePct = count ? Math.round(100 * readings.filter(r => (r.activity || 0) >= ACTIVE_THRESHOLD).length / count) : 0;
+    const totalSteps = readings.reduce((s, r) => s + (r.steps || 0), 0);
+
+    document.getElementById('stat-count').textContent = count;
+    document.getElementById('stat-avg').textContent = avg;
+    document.getElementById('stat-active').textContent = activePct + '%';
+    document.getElementById('stat-steps').textContent = totalSteps;
+
+    const roomEl = document.getElementById('room-status');
+    let roomText = 'Room: calm', roomClass = 'pill-ok';
+    if (avg >= HIGH_THRESHOLD) { roomText = 'Room: very active'; roomClass = 'pill-err'; }
+    else if (avg >= ACTIVE_THRESHOLD) { roomText = 'Room: active'; roomClass = 'pill-warn'; }
+    roomEl.textContent = roomText;
+    roomEl.className = 'status-pill ' + roomClass;
+
+    const flagEl = document.getElementById('sustained-flag');
+    if (avg >= HIGH_THRESHOLD) {
+      if (sustainedHighStart === null) sustainedHighStart = now;
+      if (now - sustainedHighStart >= 5000) flagEl.classList.remove('hidden');
+    } else {
+      sustainedHighStart = null;
+      flagEl.classList.add('hidden');
+    }
+
+    history.push(avg);
+    if (history.length > 30) history.shift();
+    drawSpark(history);
+
+    const list = document.getElementById('phone-list');
+    if (!count) {
+      list.innerHTML = '<div class="empty">Waiting for phones to connect...</div>';
+      return;
+    }
+    const sorted = readings.slice().sort((a, b) => (b.activity || 0) - (a.activity || 0));
+    list.innerHTML = sorted.map(r => {
+      const activity = r.activity || 0;
+      const peak = peakMap[r.key] !== undefined ? peakMap[r.key] : activity;
+      const connectedSec = firstSeenMap[r.key] ? Math.max(0, Math.round((now - firstSeenMap[r.key]) / 1000)) : 0;
+      let tagClass = 'tag-idle', tagText = 'idle';
+      if (activity >= HIGH_THRESHOLD) { tagClass = 'tag-high'; tagText = 'high activity'; }
+      else if (activity >= ACTIVE_THRESHOLD) { tagClass = 'tag-active'; tagText = 'active'; }
+      const barColor = activity >= HIGH_THRESHOLD ? 'var(--high)' : (activity >= ACTIVE_THRESHOLD ? 'var(--active)' : 'var(--idle)');
+      return '<div class="phone-row">' +
+        '<div class="phone-row-main">' +
+        '<div class="phone-name">' + escapeHtml(r.name || '?') + '</div>' +
+        '<div class="phone-bar-track"><div class="phone-bar-fill" style="width:' + activity + '%;background:' + barColor + '"></div></div>' +
+        '<div class="phone-val">' + activity + '</div>' +
+        '<div class="tag ' + tagClass + '">' + tagText + '</div>' +
+        '</div>' +
+        '<div class="phone-meta">peak ' + peak + ' &middot; ' + connectedSec + 's connected &middot; ' + (r.steps || 0) + ' steps</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function drawSpark(points) {
+    const svg = document.getElementById('spark');
+    if (!points.length) { svg.innerHTML = ''; return; }
+    const w = 600, h = 70, pad = 6;
+    const max = 100;
+    const stepX = points.length > 1 ? (w - pad * 2) / (points.length - 1) : 0;
+    const coords = points.map((v, i) => {
+      const x = pad + i * stepX;
+      const y = h - pad - (v / max) * (h - pad * 2);
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    });
+    const line = '<polyline points="' + coords.join(' ') + '" fill="none" stroke="#2E5395" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+    const last = coords[coords.length - 1].split(',');
+    const dot = '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="3.5" fill="#1F3864"/>';
+    svg.innerHTML = line + dot;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+</script>
+</body>
+</html>
